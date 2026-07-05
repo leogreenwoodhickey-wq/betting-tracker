@@ -957,7 +957,7 @@ function exportData() {
   URL.revokeObjectURL(url);
 }
 
-function importData(e) {
+async function importData(e) {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
@@ -969,10 +969,12 @@ function importData(e) {
       // Merge: add imported bets that don't already exist by id
       const existingIds = new Set(bets.map(b => b.id));
       const newBets = data.bets.filter(b => !existingIds.has(b.id));
+      for (const b of newBets) { const nid = await pushBetDB(b, false); b.id = nid || b.id; }
       bets = [...bets, ...newBets];
       if (data.freeBetCredits) {
         const existingFbIds = new Set(freeBetCredits.map(c => c.id));
         const newFb = data.freeBetCredits.filter(c => !existingFbIds.has(c.id));
+        for (const fb of newFb) { const nid = await pushFbDB(fb, false); fb.id = nid || fb.id; }
         freeBetCredits = [...freeBetCredits, ...newFb];
       }
       save(); render();
