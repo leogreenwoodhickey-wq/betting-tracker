@@ -509,6 +509,7 @@ let editResult = 'pending';
 const SB_URL = 'https://fidxykewtyzkrihdsmjv.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZpZHh5a2V3dHl6a3JpaGRzbWp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyNjM3NjAsImV4cCI6MjA5ODgzOTc2MH0.VFCifsPVz6E9kpBvX3-0G8vA-H-sY5dkteeVj_dA2vk';
 function setSyncDot(s){const d=document.getElementById('syncDot');if(!d)return;d.style.background={connected:'#1D9E75',syncing:'#BA7517',offline:'#D85A30'}[s]||'#D85A30';d.title=s==='connected'?'Synced':s==='syncing'?'Syncing...':'Offline';}
+
 async function sbr(path,method,body){const o={method:method||'GET',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json',Prefer:'return=representation'}};if(body)o.body=JSON.stringify(body);try{const r=await fetch(SB_URL+'/rest/v1'+path,o);if(!r.ok)return null;const t=await r.text();return t?JSON.parse(t):[];}catch(e){return null;}}
 async function loadFromDB(){setSyncDot('syncing');const a=await sbr('/bets?order=created_at.desc');const b=await sbr('/free_bet_credits?order=created_at.desc');if(a){bets=a.map(r=>({id:r.id,selection:r.selection,bookmaker:r.bookmaker,sport:r.sport,stake:r.stake,odds:r.odds,type:r.bet_type,date:r.date,status:r.status,returns:r.returns,note:r.note,freeBet:r.free_bet}));localStorage.setItem('gb_bets',JSON.stringify(bets));}if(b){freeBetCredits=b.map(r=>({id:r.id,bookmaker:r.bookmaker,amount:r.amount,used:r.used,note:r.note,date:r.date}));localStorage.setItem('gb_fb_credits',JSON.stringify(freeBetCredits));}setSyncDot(a?'connected':'offline');render();}
 async function pushBetDB(b,upd){setSyncDot('syncing');const row={selection:b.selection,bookmaker:b.bookmaker,sport:b.sport,stake:b.stake,odds:b.odds,bet_type:b.type,date:b.date,status:b.status,returns:b.returns,note:b.note,free_bet:b.freeBet};const res=upd?await sbr('/bets?id=eq.'+b.id,'PATCH',row):await sbr('/bets','POST',row);setSyncDot(res?'connected':'offline');return res&&res[0]?res[0].id:b.id;}
@@ -961,7 +962,7 @@ async function importData(e) {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = function(ev) {
+  reader.onload = async function(ev) {
     try {
       const data = JSON.parse(ev.target.result);
       if (!data.bets) { alert('Invalid backup file.'); return; }
