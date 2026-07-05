@@ -961,7 +961,7 @@ async function importData(e) {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = function(ev) {
+  reader.onload = async function(ev) {
     try {
       const data = JSON.parse(ev.target.result);
       if (!data.bets) { alert('Invalid backup file.'); return; }
