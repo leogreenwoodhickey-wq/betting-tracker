@@ -249,7 +249,7 @@
 
 <header>
   <div class="logo"><i class="ti ti-currency-pound"></i></div>
-  <h1>Betting Tracker</h1><div id="syncDot" style="width:8px;height:8px;border-radius:50%;background:#BA7517;margin-left:4px;flex-shrink:0;" title="Connecting..."></div>
+  <h1>Betting Tracker</h1><div id="syncDot" style="width:8px;height:8px;border-radius:50%;background:#BA7517;flex-shrink:0;margin-left:4px;" title="Connecting..."></div>
   <div style="display:flex;gap:6px;align-items:center;margin-left:auto;">
     <button class="io-btn" onclick="exportData()">⬇ Export</button>
     <label class="io-btn" style="cursor:pointer;display:inline-flex;align-items:center;">
@@ -508,9 +508,9 @@ let editResult = 'pending';
 // supabase-sync-start
 const SB_URL = 'https://fidxykewtyzkrihdsmjv.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZpZHh5a2V3dHl6a3JpaGRzbWp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyNjM3NjAsImV4cCI6MjA5ODgzOTc2MH0.VFCifsPVz6E9kpBvX3-0G8vA-H-sY5dkteeVj_dA2vk';
-function setSyncDot(s){const d=document.getElementById('syncDot');if(!d)return;d.style.background={'connected':'#1D9E75','syncing':'#BA7517','offline':'#D85A30'}[s];d.title=s==='connected'?'Synced':s==='syncing'?'Syncing...':'Offline';}
-async function sbr(p,m,b){const o={method:m||'GET',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json',Prefer:'return=representation'}};if(b)o.body=JSON.stringify(b);try{const r=await fetch(SB_URL+'/rest/v1'+p,o);if(!r.ok)return null;const t=await r.text();return t?JSON.parse(t):[];}catch(e){return null;}}
-async function loadFromDB(){setSyncDot('syncing');const[a,b]=await Promise.all([sbr('/bets?order=created_at.desc'),sbr('/free_bet_credits?order=created_at.desc')]);if(a){bets=a.map(r=>({id:r.id,selection:r.selection,bookmaker:r.bookmaker,sport:r.sport,stake:r.stake,odds:r.odds,type:r.bet_type,date:r.date,status:r.status,returns:r.returns,note:r.note,freeBet:r.free_bet}));localStorage.setItem('gb_bets',JSON.stringify(bets));}if(b){freeBetCredits=b.map(r=>({id:r.id,bookmaker:r.bookmaker,amount:r.amount,used:r.used,note:r.note,date:r.date}));localStorage.setItem('gb_fb_credits',JSON.stringify(freeBetCredits));}setSyncDot(a?'connected':'offline');render();}
+function setSyncDot(s){const d=document.getElementById('syncDot');if(!d)return;d.style.background={connected:'#1D9E75',syncing:'#BA7517',offline:'#D85A30'}[s]||'#D85A30';d.title=s==='connected'?'Synced':s==='syncing'?'Syncing...':'Offline';}
+async function sbr(path,method,body){const o={method:method||'GET',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json',Prefer:'return=representation'}};if(body)o.body=JSON.stringify(body);try{const r=await fetch(SB_URL+'/rest/v1'+path,o);if(!r.ok)return null;const t=await r.text();return t?JSON.parse(t):[];}catch(e){return null;}}
+async function loadFromDB(){setSyncDot('syncing');const a=await sbr('/bets?order=created_at.desc');const b=await sbr('/free_bet_credits?order=created_at.desc');if(a){bets=a.map(r=>({id:r.id,selection:r.selection,bookmaker:r.bookmaker,sport:r.sport,stake:r.stake,odds:r.odds,type:r.bet_type,date:r.date,status:r.status,returns:r.returns,note:r.note,freeBet:r.free_bet}));localStorage.setItem('gb_bets',JSON.stringify(bets));}if(b){freeBetCredits=b.map(r=>({id:r.id,bookmaker:r.bookmaker,amount:r.amount,used:r.used,note:r.note,date:r.date}));localStorage.setItem('gb_fb_credits',JSON.stringify(freeBetCredits));}setSyncDot(a?'connected':'offline');render();}
 async function pushBetDB(b,upd){setSyncDot('syncing');const row={selection:b.selection,bookmaker:b.bookmaker,sport:b.sport,stake:b.stake,odds:b.odds,bet_type:b.type,date:b.date,status:b.status,returns:b.returns,note:b.note,free_bet:b.freeBet};const res=upd?await sbr('/bets?id=eq.'+b.id,'PATCH',row):await sbr('/bets','POST',row);setSyncDot(res?'connected':'offline');return res&&res[0]?res[0].id:b.id;}
 async function delBetDB(id){await sbr('/bets?id=eq.'+id,'DELETE');}
 async function pushFbDB(c,upd){const row={bookmaker:c.bookmaker,amount:c.amount,used:c.used,note:c.note,date:c.date};const res=upd?await sbr('/free_bet_credits?id=eq.'+c.id,'PATCH',row):await sbr('/free_bet_credits','POST',row);return res&&res[0]?res[0].id:c.id;}
@@ -689,7 +689,7 @@ async function saveEdit() {
   if (editResult === 'lost') b.returns = 0;
   if (editResult === 'void') b.returns = b.stake || 0;
 
-  await pushBetDB(b,true);
+  await pushBetDB(b, true);
   save(); closeEditModal(); render();
 }
 
@@ -701,7 +701,7 @@ async function setResult(id, result) {
   if (result === 'won') { if (!b.returns && b.stake && b.odds) b.returns = parseFloat((b.freeBet ? b.stake*(b.odds-1) : b.stake*b.odds).toFixed(2)); }
   else if (result === 'lost') b.returns = 0;
   else { b.returns = b.stake || 0; b.status = 'void'; }
-  await pushBetDB(b,true);
+  await pushBetDB(b, true);
   save(); render();
 }
 
@@ -991,76 +991,6 @@ render();
 
 // Init settled filter pill
 document.getElementById('sf-all').classList.add('active-pending');
-
-// ── Supabase sync ─────────────────────────────────────────────
-const SUPABASE_URL = 'https://fidxykewtyzkrihdsmjv.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZpZHh5a2V3dHl6a3JpaGRzbWp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyNjM3NjAsImV4cCI6MjA5ODgzOTc2MH0.VFCifsPVz6E9kpBvX3-0G8vA-H-sY5dkteeVj_dA2vk';
-
-function setSyncStatus(status) {
-  const dot = document.getElementById('syncDot');
-  if (!dot) return;
-  dot.className = 'sync-dot ' + status;
-  dot.title = status === 'connected' ? 'Synced' : status === 'syncing' ? 'Syncing...' : 'Offline - using local data';
-}
-
-async function sbFetch(path, method='GET', body=null) {
-  const opts = { method, headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' } };
-  if (body) opts.body = JSON.stringify(body);
-  try {
-    const res = await fetch(SUPABASE_URL + '/rest/v1' + path, opts);
-    if (!res.ok) { console.error('Supabase error', res.status); return null; }
-    const text = await res.text();
-    return text ? JSON.parse(text) : [];
-  } catch(e) { console.error('Supabase fetch failed', e); return null; }
-}
-
-async function syncFromSupabase() {
-  setSyncStatus('syncing');
-  const [sbBets, sbFb] = await Promise.all([
-    sbFetch('/bets?order=created_at.desc'),
-    sbFetch('/free_bet_credits?order=created_at.desc')
-  ]);
-  if (sbBets !== null) {
-    bets = sbBets.map(r => ({ id: r.id, selection: r.selection, bookmaker: r.bookmaker, sport: r.sport, stake: r.stake, odds: r.odds, type: r.bet_type, date: r.date, status: r.status, returns: r.returns, note: r.note, freeBet: r.free_bet }));
-    localStorage.setItem('gb_bets', JSON.stringify(bets));
-  }
-  if (sbFb !== null) {
-    freeBetCredits = sbFb.map(r => ({ id: r.id, bookmaker: r.bookmaker, amount: r.amount, used: r.used, note: r.note, date: r.date }));
-    localStorage.setItem('gb_fb_credits', JSON.stringify(freeBetCredits));
-  }
-  setSyncStatus(sbBets !== null ? 'connected' : 'offline');
-  render();
-}
-
-async function pushBetToDB(b, update=false) {
-  setSyncStatus('syncing');
-  const row = { selection: b.selection, bookmaker: b.bookmaker, sport: b.sport, stake: b.stake, odds: b.odds, bet_type: b.type, date: b.date, status: b.status, returns: b.returns, note: b.note, free_bet: b.freeBet };
-  const result = update ? await sbFetch('/bets?id=eq.' + b.id, 'PATCH', row) : await sbFetch('/bets', 'POST', row);
-  setSyncStatus(result !== null ? 'connected' : 'offline');
-  return result && result[0] ? result[0].id : b.id;
-}
-
-async function deleteBetFromDB(id) { await sbFetch('/bets?id=eq.' + id, 'DELETE'); }
-
-async function pushFbToDB(c, update=false) {
-  const row = { bookmaker: c.bookmaker, amount: c.amount, used: c.used, note: c.note, date: c.date };
-  const result = update ? await sbFetch('/free_bet_credits?id=eq.' + c.id, 'PATCH', row) : await sbFetch('/free_bet_credits', 'POST', row);
-  return result && result[0] ? result[0].id : c.id;
-}
-
-async function deleteFbFromDB(id) { await sbFetch('/free_bet_credits?id=eq.' + id, 'DELETE'); }
-
-// Patch save functions to also push to Supabase
-const _origSave = typeof save === 'function' ? save : null;
-
-// Override saveBet to push to DB
-const _saveBetOrig = window.saveBet;
-window.saveBet = async function() {
-  _saveBetOrig && _saveBetOrig();
-};
-
-// Start syncing
-syncFromSupabase();
 </script>
 </body>
 </html>
