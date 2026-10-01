@@ -4,5 +4,19 @@
       "source": { "source": "github", "repo": "bradautomates/claude-video" }
     }
   },
-  "enabledPlugins": { "watch@claude-video": true }
+  "enabledPlugins": { "watch@claude-video": true },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/install-watch.sh",
+            "timeout": 300
+          }
+        ]
+      }
+    ]
+  }
 }
